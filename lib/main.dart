@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 import 'login_screen.dart';
-import 'home_screen.dart';
+import 'screens/home/home_screen.dart';
 import 'onboarding_screen.dart';
 
 Future<void> main() async {
