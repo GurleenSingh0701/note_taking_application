@@ -30,27 +30,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
 
-    void navigateToSearch(BuildContext context) {
-      showSearch(context: context, delegate: NotesSearchDelegate());
-    }
-
-    void navigateToNoteEditor(BuildContext context, [Note? note]) {
-      // TODO: Implement navigation to note editor
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => Scaffold(
-            appBar: AppBar(
-              title: Text(note == null ? 'New Note' : 'Edit Note'),
-            ),
-            body: const Center(child: Text('Note Editor Placeholder')),
-          ),
-        ),
-      );
-    }
-
+    // Redirect to login if not authenticated
     if (user == null) {
       Future.microtask(
         () => Navigator.pushReplacement(
@@ -61,6 +43,16 @@ class _HomeScreenState extends State<HomeScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    // Define main content area
+    Widget mainContent = _selectedIndex == _navItems.length
+        ? const SettingsScreen()
+        : Center(
+            child: Text(
+              'Showing: ${_navItems[_selectedIndex].label}',
+              style: const TextStyle(fontSize: 20),
+            ),
+          ); // TODO: Replace with your NotesGrid or NotesList widget
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -70,7 +62,8 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            onPressed: () => navigateToSearch(context),
+            onPressed: () =>
+                showSearch(context: context, delegate: NotesSearchDelegate()),
           ),
           IconButton(
             icon: Icon(_isGridLayout ? Icons.list : Icons.grid_view),
@@ -78,57 +71,95 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () => navigateToNoteEditor(context),
+            onPressed: () => _navigateToNoteEditor(context),
           ),
           if (user != null) UserMenu(user: user!),
         ],
       ),
-      body: _selectedIndex == _navItems.length ? const SettingsScreen() : null,
+
+      // Responsive body
+      body: isMobile
+          ? mainContent
+          : Row(
+              children: [
+                _buildNavigationRail(context),
+                Expanded(child: mainContent),
+              ],
+            ),
+
+      // Only mobile bottom bar
+      bottomNavigationBar: isMobile ? _buildMobileNavigationBar(context) : null,
+
+      // FAB for mobile only
       floatingActionButton: isMobile && _selectedIndex != _navItems.length
           ? FloatingActionButton(
-              onPressed: () => navigateToNoteEditor(context),
+              onPressed: () => _navigateToNoteEditor(context),
               child: const Icon(Icons.add),
             )
           : null,
-      bottomNavigationBar: NavigationBar(
-        destinations: [
-          for (int i = 0; i < _navItems.length; i++)
-            NavigationDestination(
-              icon: Icon(_navItems[i].icon),
-              label: _navItems[i].label,
-            ),
-        ],
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          if (index == _navItems.length - 1) {
-            _showMoreOptions(context);
-          } else {
-            setState(() => _selectedIndex = index);
-          }
-        },
-        indicatorColor: Theme.of(context).colorScheme.primary,
-        backgroundColor: Theme.of(context).colorScheme.surface,
+    );
+  }
+
+  void _navigateToNoteEditor(BuildContext context, [Note? note]) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(title: Text(note == null ? 'New Note' : 'Edit Note')),
+          body: const Center(child: Text('Note Editor Placeholder')),
+        ),
       ),
     );
   }
+
   void _showMoreOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      builder: (context) => Wrap(
-        children: [
-          ListTile(
-            leading: const Icon(Icons.settings),
-            title: const Text('Settings'),
-            onTap: () {
-              Navigator.pop(context);
-              setState(() {
-                _selectedIndex = _navItems.length;
-              });
-            },
+      builder: (context) => const SettingsScreen(),
+    );
+  }
+
+  Widget _buildMobileNavigationBar(BuildContext context) {
+    return NavigationBar(
+      destinations: [
+        for (final item in _navItems)
+          NavigationDestination(icon: Icon(item.icon), label: item.label),
+      ],
+      selectedIndex: _selectedIndex,
+      onDestinationSelected: (index) {
+        if (index == _navItems.length - 1) {
+          _showMoreOptions(context);
+        } else {
+          setState(() => _selectedIndex = index);
+        }
+      },
+      indicatorColor: Theme.of(context).colorScheme.primary,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+    );
+  }
+
+  Widget _buildNavigationRail(BuildContext context) {
+    return NavigationRail(
+      useIndicator: true,
+      destinations: [
+        for (final item in _navItems)
+          NavigationRailDestination(
+            icon: Icon(item.icon),
+            label: Text(item.label),
           ),
-          // Add more options here if needed
-        ],
-      ),
+      ],
+      selectedIndex: _selectedIndex,
+      onDestinationSelected: (index) {
+        if (index == _navItems.length - 1) {
+          _showMoreOptions(context);
+        } else {
+          setState(() => _selectedIndex = index);
+        }
+      },
+      extended: true,
+      elevation: 10,
+      backgroundColor: Theme.of(context).colorScheme.surface,
     );
   }
 }

@@ -7,7 +7,7 @@ class NoteCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
-  const NoteCard({
+  const NoteCard(Note pinnedNot, bool isMobile, {
     super.key,
     required this.note,
     required this.isGrid,
